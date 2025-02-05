@@ -3,6 +3,7 @@ import logo from "../assets/logo.png";
 import { Link } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { setToken, setUser } from "../redux/slices/userSlice";
+import Logo from "./Logo";
 
 const Navbar = () => {
   const dispatch = useDispatch();
@@ -10,9 +11,10 @@ const Navbar = () => {
     <nav className="bg-blue-600 shadow-lg">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center">
-          <div className="text-white text-2xl font-bold flex items-center">
+          {/* <div className="text-white text-2xl font-bold flex items-center">
             <img src={logo} alt="Logo" className="h-24 w-24  object-contain" />
-          </div>
+          </div> */}
+          <Logo />
 
           <div className="flex items-center space-x-6">
             <Link
