@@ -108,9 +108,29 @@ import {
 import * as XLSX from "xlsx";
 import jsPDF from "jspdf";
 import "jspdf-autotable";
+// import Logo from "./Logo";
+import logo from "../assets/logo.png";
 
 const SummaryTable = ({ bugs }) => {
   const navigate = useNavigate();
+
+  function countBugsByStatus(bugs) {
+    const projectCounts = bugs.reduce((acc, bug) => {
+      if (!acc[bug.projectName]) {
+        acc[bug.projectName] = {};
+      }
+      acc[bug.projectName][bug.status] = (acc[bug.projectName][bug.status] || 0) + 1;
+      return acc;
+    }, {});
+
+    // Convert the object to an array
+    return Object.keys(projectCounts).map(projectName => {
+      const statuses = projectCounts[projectName];
+      return { projectName, statuses };
+    });
+  }
+
+  const bugStatusCount = countBugsByStatus(bugs)
 
   // Prepare data for status chart
   const statusData = bugs.reduce((acc, bug) => {
@@ -142,13 +162,17 @@ const SummaryTable = ({ bugs }) => {
   // Export to Excel
   const exportToExcel = () => {
     const worksheet = XLSX.utils.json_to_sheet(
-      bugs.map((bug) => ({
-        "Project Name": bug.projectName || "Attendance Management System",
-        Platform: bug.platform || "Web App",
-        "Bug Name": bug.bugName || "Unknown",
-        Status: bug.status,
-        Priority: bug.priority,
-      }))
+      bugs.map((bug) => {
+        const projectStatusCount = bugStatusCount.find((status) => status.projectName === bug.projectName);
+        const count = projectStatusCount ? projectStatusCount.statuses[bug.status] || 0 : 0;
+        return {
+          "Project Name": bug.projectName || "Attendance Management System",
+          Platform: bug.platform || "Web App",
+          Status: bug.status,
+          count,
+          Priority: bug.priority,
+        }
+      })
     );
 
     const workbook = XLSX.utils.book_new();
@@ -160,25 +184,35 @@ const SummaryTable = ({ bugs }) => {
   const exportToPDF = () => {
     const doc = new jsPDF();
 
-    doc.text("Bugs Summary Report", 14, 15);
+    doc.text(`Bugs Summary Report`, 14, 15);
 
-    const tableData = bugs.map((bug) => [
-      bug.projectName || "Attendance Management System",
-      bug.platform || "Web App",
-      bug.bugName || "Unknown",
-      new Date(bug.createdAt).toLocaleDateString() || "Unknown",
-      bug.status,
-      bug.priority,
-    ]);
+    const tableData = bugs.map((bug) => {
+      const projectStatusCount = bugStatusCount.find((status) => status.projectName === bug.projectName);
+      const count = projectStatusCount ? projectStatusCount.statuses[bug.status] || 0 : 0;
+      return [
+        bug.projectName || "Attendance Management System",
+        bug.platform || "Web App",
+        bug.status,
+        count,
+        bug.priority,
+      ]
+    });
 
     doc.autoTable({
-      head: [["Project Name", "Platform", "Bug Name", "Created At", "Status", "Priority"]],
+      head: [["Project Name", "Platform", "Status", "Count", "Priority"]],
       body: tableData,
       startY: 20,
     });
 
     doc.save("bugs_report.pdf");
+
   };
+
+
+
+  // console.log(bugStatusCount)
+
+  // console.log(Object.entries(bugStatusCount)?.find(([key, val])=> key === bugs[0]?.projectName))
 
   return (
     <div className="container mx-auto px-4 lg:px-12 py-8">
@@ -253,17 +287,20 @@ const SummaryTable = ({ bugs }) => {
                 Platform
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wide">
-                BugName
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wide">
-                Created At
-              </th>
-              <th className="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wide">
                 Status
+              </th>
+              <th className="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wide">
+                Count
               </th>
               <th className="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wide">
                 Priority
               </th>
+              {/* <th className="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wide">
+                BugName
+              </th> */}
+              {/* <th className="px-6 py-3 text-left text-sm font-semibold uppercase tracking-wide">
+                Created At
+              </th> */}
             </tr>
           </thead>
           <tbody>
@@ -280,33 +317,39 @@ const SummaryTable = ({ bugs }) => {
                   <td className="px-6 py-4 text-sm font-medium text-gray-700">
                     {bug.platform || "Web App"}
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                  {/* <td className="px-6 py-4 text-sm text-gray-600">
                     {bug.bugName || "Unknown"}
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
+                    </td>
+                    <td className="px-6 py-4 text-sm text-gray-600">
                     {new Date(bug.createdAt).toLocaleDateString() || "Unknown"}
-                  </td>
+                    </td> */}
                   <td
-                    className={`px-6 py-4 text-sm font-semibold ${
-                      bug.status === "Open"
-                        ? "text-green-500"
-                        : bug.status === "Closed"
+                    className={`px-6 py-4 text-sm font-semibold ${bug.status === "Open"
+                      ? "text-green-500"
+                      : bug.status === "Closed"
                         ? "text-red-500"
                         : "text-yellow-500"
-                    }`}
+                      }`}
                   >
                     {bug.status}
                   </td>
+                  <td className="px-6 py-4 text-sm font-medium text-gray-700">
+                    {bugStatusCount.length > 0 && bugStatusCount.map((status) => {
+                      if (status.projectName === bug.projectName) {
+                        return status.statuses[bug.status] || 0; // Display count or 0 if no count found
+                      }
+                      return null;
+                    })}
+                  </td>
                   <td
-                    className={`px-6 py-4 text-sm ${
-                      bug.priority === "High"
-                        ? "text-orange-600 font-semibold"
-                        : bug.priority === "Medium"
+                    className={`px-6 py-4 text-sm ${bug.priority === "High"
+                      ? "text-orange-600 font-semibold"
+                      : bug.priority === "Medium"
                         ? "text-yellow-600 font-semibold"
                         : bug.priority === "Critical"
-                        ? "text-red-600 font-semibold"
-                        : "text-green-600 font-semibold"
-                    }`}
+                          ? "text-red-600 font-semibold"
+                          : "text-green-600 font-semibold"
+                      }`}
                   >
                     {bug.priority}
                   </td>

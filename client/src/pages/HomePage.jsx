@@ -37,7 +37,7 @@ const HomePage = () => {
     }
   };
 
-  console.log(bugs)
+  // console.log(bugs)
 
   const filteredBugs = bugs.filter((bug) => {
     return (
@@ -59,17 +59,7 @@ const HomePage = () => {
     );
   });
 
-  function countBugsByStatus(bugs) {
-    return bugs.reduce((acc, bug) => {
-      if (!acc[bug.projectName]) {
-        acc[bug.projectName] = {};
-      }
-      acc[bug.projectName][bug.status] = (acc[bug.projectName][bug.status] || 0) + 1;
-      return acc;
-    }, {});
-  }
-
-  console.log(countBugsByStatus(bugs))
+  
 
 
   return (
