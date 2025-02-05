@@ -59,6 +59,19 @@ const HomePage = () => {
     );
   });
 
+  function countBugsByStatus(bugs) {
+    return bugs.reduce((acc, bug) => {
+      if (!acc[bug.projectName]) {
+        acc[bug.projectName] = {};
+      }
+      acc[bug.projectName][bug.status] = (acc[bug.projectName][bug.status] || 0) + 1;
+      return acc;
+    }, {});
+  }
+
+  console.log(countBugsByStatus(bugs))
+
+
   return (
     <DefaultLayout>
       <h1 className="text-center font-bold text-3xl py-10">Bugs Report</h1>
